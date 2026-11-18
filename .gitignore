@@ -1,0 +1,31 @@
+# env
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# node
+node_modules/
+.next/
+out/
+.vercel/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
+backups/

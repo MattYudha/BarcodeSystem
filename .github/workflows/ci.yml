@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API — lint, type, test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bhv
+          POSTGRES_PASSWORD: bhv
+          POSTGRES_DB: bhv
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bhv -d bhv"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://bhv:bhv@localhost:5433/bhv
+      TEST_DATABASE_URL: postgresql+psycopg://bhv:bhv@localhost:5433/bhv_test
+      APP_ENV: test
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: Ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Mypy
+        run: uv run mypy
+      - name: Pytest (Postgres asli)
+        run: uv run pytest
+      - name: Migrasi + rekonsiliasi stok
+        run: |
+          uv run bhv migrate
+          uv run bhv check-stock
+
+  stack-smoke:
+    name: Docker stack smoke test
+    runs-on: ubuntu-latest
+    needs: api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & start (profile full)
+        run: docker compose -f infra/docker-compose.yml --profile full up -d --build --wait
+      - name: Readiness
+        run: curl --fail --silent http://localhost:8000/readyz
+      - name: Rekonsiliasi stok di container
+        run: docker compose -f infra/docker-compose.yml exec -T api bhv check-stock
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml --profile full logs
+      - name: Teardown
+        if: always()
+        run: docker compose -f infra/docker-compose.yml --profile full down -v

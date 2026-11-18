@@ -1,0 +1,30 @@
+DROP VIEW IF EXISTS v_variant_stock;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS stock_movements;
+DROP TABLE IF EXISTS movement_groups;
+DROP TABLE IF EXISTS stock_opname_items;
+DROP TABLE IF EXISTS stock_opnames;
+DROP TABLE IF EXISTS product_variants;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS login_attempts;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+
+DROP FUNCTION IF EXISTS bhv_apply_stock_movement();
+DROP FUNCTION IF EXISTS bhv_opname_items_guard();
+DROP FUNCTION IF EXISTS bhv_opnames_before_update();
+DROP FUNCTION IF EXISTS bhv_variants_before_update();
+DROP FUNCTION IF EXISTS bhv_variants_before_insert();
+DROP FUNCTION IF EXISTS bhv_products_before_update();
+DROP FUNCTION IF EXISTS bhv_products_before_insert();
+DROP FUNCTION IF EXISTS bhv_reject_mutation();
+DROP FUNCTION IF EXISTS bhv_touch_updated_at();
+DROP FUNCTION IF EXISTS bhv_raise(TEXT, JSONB);
+DROP FUNCTION IF EXISTS bhv_format_seq(BIGINT, INT);
+
+DROP TYPE IF EXISTS opname_status;
+DROP TYPE IF EXISTS movement_source;
+DROP TYPE IF EXISTS out_reason;
+DROP TYPE IF EXISTS movement_type;
+DROP TYPE IF EXISTS user_role;
