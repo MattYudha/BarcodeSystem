@@ -13,6 +13,7 @@ dependencies = [
     "python-barcode>=0.15.1",
     "reportlab>=4.2",
     "typer>=0.12",
+    "tzdata>=2024.1",  # zoneinfo Asia/Jakarta di Windows & image slim
 ]
 
 [project.scripts]
@@ -26,6 +27,9 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.8",
     "mypy>=1.13",
+    # verifikasi label bisa di-scan (render PDF -> decode barcode)
+    "pypdfium2>=4.30",
+    "zxing-cpp>=2.2",
 ]
 
 [build-system]
@@ -56,6 +60,8 @@ known-third-party = ["alembic"]   # folder alembic/ lokal jangan dianggap first-
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106", "S608", "E501"]
+# SQL dirakit hanya dari fragmen/nama kolom whitelist; nilai user selalu lewat bind param.
+"src/bhv/routers/**" = ["S608"]
 "alembic/**" = ["E501"]
 
 [tool.mypy]
@@ -63,3 +69,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["barcode", "barcode.*", "reportlab", "reportlab.*"]
+ignore_missing_imports = true

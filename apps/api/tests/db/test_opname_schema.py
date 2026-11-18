@@ -1,7 +1,7 @@
 """Stock opname: satu draft aktif, terkunci setelah final, ADJUST terhubung ke opname."""
 
 import pytest
-from conftest import Db, raises_code
+from dbkit import Db, raises_code
 from psycopg import errors
 
 

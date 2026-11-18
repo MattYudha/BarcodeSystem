@@ -4,7 +4,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import psycopg
-from conftest import Db
+from dbkit import Db
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from psycopg import errors

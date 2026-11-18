@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     session_idle_minutes: int = 30
     session_absolute_hours: int = 12
+    login_max_failures_per_email: int = 5
+    login_max_failures_per_ip: int = 20
     cookie_secure: bool = False
     cookie_name: str = "bhv_session"
     timezone: str = "Asia/Jakarta"

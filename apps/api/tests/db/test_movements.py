@@ -4,7 +4,7 @@ from contextlib import nullcontext
 
 import psycopg
 import pytest
-from conftest import Db, raises_check, raises_code
+from dbkit import Db, raises_check, raises_code
 
 
 @pytest.fixture

@@ -1,5 +1,14 @@
-from collections.abc import AsyncIterator
+"""Koneksi DB async.
 
+Pola transaksi: dependency `get_db` memberi AsyncSession; endpoint yang menulis WAJIB memanggil
+`await db.commit()` sendiri sebelum return. Jika ada exception, session ditutup -> rollback.
+(Commit eksplisit menjamin data tersimpan SEBELUM respons sukses dikirim ke client.)
+"""
+
+from collections.abc import AsyncIterator
+from typing import Any
+
+from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -21,6 +30,7 @@ def get_engine() -> AsyncEngine:
             pool_pre_ping=True,
             pool_size=10,
             max_overflow=10,
+            connect_args={"options": "-c timezone=UTC"},
         )
         _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
     return _engine
@@ -43,3 +53,23 @@ async def dispose_engine() -> None:
         await _engine.dispose()
     _engine = None
     _sessionmaker = None
+
+
+# --- helper query ringkas (SQL eksplisit; logika stok ada di DB) ---------------------------
+
+
+async def fetch_one(db: AsyncSession, sql: str, **params: Any) -> Row[Any] | None:
+    return (await db.execute(text(sql), params)).first()
+
+
+async def fetch_all(db: AsyncSession, sql: str, **params: Any) -> list[Row[Any]]:
+    return list((await db.execute(text(sql), params)).all())
+
+
+async def fetch_val(db: AsyncSession, sql: str, **params: Any) -> Any:
+    return (await db.execute(text(sql), params)).scalar()
+
+
+async def execute(db: AsyncSession, sql: str, **params: Any) -> int:
+    result = await db.execute(text(sql), params)
+    return int(getattr(result, "rowcount", 0) or 0)
