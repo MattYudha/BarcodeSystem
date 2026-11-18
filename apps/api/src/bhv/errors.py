@@ -65,6 +65,23 @@ CATALOG: dict[str, tuple[int, str]] = {
     "STOCK_DIRECT_WRITE": (409, "Stok hanya bisa diubah lewat transaksi."),
     "OPNAME_CLOSED": (409, "Stock opname sudah ditutup."),
     # label
+    # transaksi
+    "IDEMPOTENCY_KEY_REQUIRED": (422, "Header Idempotency-Key (UUID) wajib diisi."),
+    "IDEMPOTENCY_MISMATCH": (
+        409,
+        "Kunci transaksi ini sudah dipakai untuk data yang berbeda. Muat ulang halaman.",
+    ),
+    "REVERSAL_NOT_ALLOWED": (
+        403,
+        "Staf hanya bisa membatalkan transaksi masuk/keluar miliknya sendiri maksimal 15 menit.",
+    ),
+    # opname
+    "OPNAME_NOT_FOUND": (404, "Stock opname tidak ditemukan."),
+    "OPNAME_DRAFT_EXISTS": (409, "Masih ada stock opname yang belum selesai."),
+    "OPNAME_EMPTY": (422, "Belum ada barang yang dihitung."),
+    "OPNAME_ITEM_NOT_FOUND": (404, "Barang ini belum dihitung pada opname ini."),
+    # laporan
+    "PERIOD_INVALID": (422, "Periode laporan tidak valid."),
     "LABEL_LIMIT": (422, "Jumlah label terlalu banyak dalam satu cetak."),
     "LABEL_TOO_SMALL": (
         422,
@@ -92,6 +109,8 @@ _UNIQUE_MAP = {
     "users_email_key": "EMAIL_TAKEN",
     "categories_name_key": "CATEGORY_TAKEN",
     "uq_variants_product_size_color": "VARIANT_DUPLICATE",
+    "uq_stock_opnames_single_draft": "OPNAME_DRAFT_EXISTS",
+    "stock_movements_reversal_of_key": "ALREADY_REVERSED",  # pembatalan paralel
 }
 
 

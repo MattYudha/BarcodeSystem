@@ -12,9 +12,11 @@ Aplikasi web pencatatan stok pakaian Bhavia International Tailor lewat scan barc
 - [x] M0 Fondasi: monorepo, Docker via WSL, CI
 - [x] M1 Database: schema, trigger stok, tes DB
 - [x] M2 API inti: login/sesi/rate-limit, akun, kategori/barang/varian, barcode SVG, label PDF, audit log
-- [ ] M3 API stok · M4–M5 Web (+ Playwright) · M6 E2E penuh & performa · M7 Deploy
+- [x] M3 API stok: scan masuk/keluar (keranjang + idempotensi), penyesuaian, pembatalan, stock opname,
+      kartu stok, dashboard, laporan harian/mingguan/bulanan + CSV (batas hari WIB), `bhv seed`
+- [ ] M4–M5 Web (+ Playwright) · M6 E2E penuh & performa · M7 Deploy
 
-Total 122 tes: 67 DB, 47 E2E API (HTTP), 8 unit (termasuk decode barcode label pada resolusi printer).
+Total 178 tes: 69 DB, 81 E2E API (HTTP), 28 unit (termasuk decode barcode label pada resolusi printer).
 
 ## Prasyarat (Windows, tanpa Docker Desktop)
 - Docker Engine di WSL (`Ubuntu-22.04`), user masuk grup `docker`. Disarankan juga `sudo apt install docker-buildx` (build lebih cepat; tanpa itu tetap jalan).
@@ -30,6 +32,7 @@ cd apps\api
 uv sync
 uv run bhv migrate                   # migrasi DB
 uv run bhv create-admin              # admin pertama (interaktif)
+uv run bhv seed                      # opsional: data contoh dari prototipe
 uv run bhv serve --reload            # API di http://localhost:8000/api/v1/docs
 ```
 Dari Git Bash/Linux gunakan `scripts/dc.sh` dengan argumen yang sama.
@@ -59,6 +62,15 @@ E2E_BASE_URL=http://localhost:8000 E2E_ADMIN_EMAIL=e2e-admin@bhavia-e2e.com \
 E2E_ADMIN_PASSWORD=E2e-Admin-Pass1 E2E_DATABASE_URL=postgresql://bhv:bhv@localhost:5433/bhv \
 uv run pytest tests/api
 ```
+
+## Troubleshooting WSL
+**`localhost:5433` timeout / API tidak siap** — WSL mematikan distro beberapa saat setelah sesi
+`wsl.exe` terakhir ditutup, dan Docker di dalamnya ikut berhenti. Jalankan di terminal terpisah:
+```powershell
+.\scripts\wsl-keepalive.ps1
+```
+Jika distro hidup tapi port tetap tidak bisa diakses dari Windows (relay `wslrelay.exe` macet),
+`wsl --shutdown` lalu `.\scripts\dc.ps1 up -d --wait db` (ini juga menghentikan container lain di WSL).
 
 ## Label barcode
 | Template | Untuk | Catatan |

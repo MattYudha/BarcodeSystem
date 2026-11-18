@@ -53,6 +53,9 @@ class Api:
     def patch(self, url: str, **kw: Any) -> httpx.Response:
         return self.http.patch(url, **kw)
 
+    def put(self, url: str, **kw: Any) -> httpx.Response:
+        return self.http.put(url, **kw)
+
     def delete(self, url: str, **kw: Any) -> httpx.Response:
         return self.http.delete(url, **kw)
 
@@ -86,3 +89,19 @@ def create_product(admin: Api, category_id: int, **overrides: Any) -> dict[str, 
     }
     body.update(overrides)
     return admin.ok("POST", "/products", 201, json=body)
+
+
+def post_movement(
+    api: Api, type_: str, lines: list[dict[str, Any]], key: str | None = None,
+    source: str = "scanner",
+) -> httpx.Response:  # fmt: skip
+    """POST /movements dengan Idempotency-Key (baru jika tidak diberikan)."""
+    return api.post(
+        "/movements",
+        json={"type": type_, "source": source, "lines": lines},
+        headers={"Idempotency-Key": key or str(uuid.uuid4())},
+    )
+
+
+def stock_of(api: Api, variant_id: int) -> int:
+    return int(api.ok("GET", f"/variants/{variant_id}")["stock"])

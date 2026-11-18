@@ -78,6 +78,8 @@ jobs:
         run: >-
           $COMPOSE exec -T api bhv create-admin
           --email "$E2E_ADMIN_EMAIL" --name "E2E Admin" --password "$E2E_ADMIN_PASSWORD"
+      - name: Seed data contoh (CLI di container)
+        run: $COMPOSE exec -T api bhv seed
       - name: Install test deps
         working-directory: apps/api
         run: uv sync --frozen

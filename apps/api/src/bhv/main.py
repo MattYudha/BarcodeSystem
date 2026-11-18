@@ -8,7 +8,7 @@ from sqlalchemy import text
 from bhv import __version__, errors
 from bhv.config import get_settings
 from bhv.db import dispose_engine, get_sessionmaker
-from bhv.routers import auth, categories, products, users
+from bhv.routers import auth, categories, movements, opname, products, reports, users
 
 API_PREFIX = "/api/v1"
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -53,7 +53,15 @@ async def csrf_and_headers(
     return response
 
 
-for r in (auth.router, users.router, categories.router, products.router):
+for r in (
+    auth.router,
+    users.router,
+    categories.router,
+    products.router,
+    movements.router,
+    opname.router,
+    reports.router,
+):
     app.include_router(r, prefix=API_PREFIX)
 
 

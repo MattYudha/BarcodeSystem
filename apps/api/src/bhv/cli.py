@@ -84,6 +84,83 @@ def create_admin(
     typer.echo(f"Admin {'dibuat' if row[1] else 'diperbarui'}: {email} (id {row[0]})")
 
 
+# Data contoh dari prototipe; semua stok awal dicatat sebagai transaksi IN (temuan #1).
+_SEED: list[tuple[str, str, int | None, list[tuple[str, str | None, int, int]]]] = [
+    # kategori, nama, harga, [(ukuran, warna, stok_min, stok_awal)]
+    ("Kemeja", "Kemeja Batik Pria", 185000,
+     [("S", None, 10, 12), ("M", None, 10, 20), ("L", None, 10, 30), ("XL", None, 10, 8)]),
+    ("Blazer", "Blazer Formal Wanita", 450000, [("M", "Hitam", 8, 6), ("L", "Hitam", 8, 9)]),
+    ("Celana", "Celana Bahan Pria", 220000, [("30", None, 10, 12), ("32", None, 10, 15)]),
+    ("Gamis", "Gamis Brokat", 375000, [("L", "Hijau Botol", 5, 7), ("XL", "Hijau Botol", 5, 3)]),
+]  # fmt: skip
+
+
+@app.command()
+def seed() -> None:
+    """Isi data contoh (kategori, barang, varian, stok awal + 1 penjualan). Aman diulang."""
+    import uuid
+
+    with _connect() as conn:
+        admin = conn.execute(
+            "SELECT id FROM users WHERE role = 'admin' AND is_active ORDER BY id LIMIT 1"
+        ).fetchone()
+        if admin is None:
+            typer.secho("Belum ada admin. Jalankan `bhv create-admin` dulu.", fg=typer.colors.RED)
+            raise typer.Exit(code=1)
+        uid = admin[0]
+        created = 0
+        for cat, name, price, variants in _SEED:
+            conn.execute("INSERT INTO categories (name) VALUES (%s) ON CONFLICT DO NOTHING", (cat,))
+            cid = conn.execute("SELECT id FROM categories WHERE name = %s", (cat,)).fetchone()[0]  # type: ignore[index]
+            if conn.execute(
+                "SELECT 1 FROM products WHERE name = %s AND category_id = %s", (name, cid)
+            ).fetchone():
+                continue
+            pid = conn.execute(
+                "INSERT INTO products (category_id, name, price, created_by)"
+                " VALUES (%s, %s, %s, %s) RETURNING id",
+                (cid, name, price, uid),
+            ).fetchone()[0]  # type: ignore[index]
+            gid = uuid.uuid4()
+            conn.execute(
+                "INSERT INTO movement_groups (id, kind, request_hash, line_count, user_id)"
+                " VALUES (%s, 'IN', 'seed', %s, %s)",
+                (gid, len(variants), uid),
+            )
+            for size, color, min_stock, qty in variants:
+                vid = conn.execute(
+                    "INSERT INTO product_variants (product_id, size, color, min_stock)"
+                    " VALUES (%s, %s, %s, %s) RETURNING id",
+                    (pid, size, color, min_stock),
+                ).fetchone()[0]  # type: ignore[index]
+                conn.execute(
+                    "INSERT INTO stock_movements (group_id, variant_id, type, qty, note, source,"
+                    " user_id) VALUES (%s, %s, 'IN', %s, 'Stok awal', 'initial', %s)",
+                    (gid, vid, qty, uid),
+                )
+            created += 1
+        # contoh penjualan (seperti prototipe: 6 kemeja keluar)
+        if created:
+            vid = conn.execute(
+                "SELECT pv.id FROM product_variants pv JOIN products p ON p.id = pv.product_id"
+                " JOIN categories c ON c.id = p.category_id"
+                " WHERE c.name = 'Kemeja' AND p.name = 'Kemeja Batik Pria' AND pv.size = 'L'"
+            ).fetchone()
+            if vid:
+                gid = uuid.uuid4()
+                conn.execute(
+                    "INSERT INTO movement_groups (id, kind, request_hash, line_count, user_id)"
+                    " VALUES (%s, 'OUT', 'seed', 1, %s)",
+                    (gid, uid),
+                )
+                conn.execute(
+                    "INSERT INTO stock_movements (group_id, variant_id, type, qty, reason, source,"
+                    " user_id) VALUES (%s, %s, 'OUT', -6, 'sale', 'manual', %s)",
+                    (gid, vid[0], uid),
+                )
+    typer.echo(f"Seed selesai: {created} barang baru.")
+
+
 @app.command("check-stock")
 def check_stock() -> None:
     """Rekonsiliasi: stok cache = Σ transaksi = saldo terakhir, saldo berjalan konsisten."""

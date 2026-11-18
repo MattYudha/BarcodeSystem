@@ -213,3 +213,22 @@ def test_audit_logs_immutable(db: Db, user: int) -> None:
         db.conn.execute("UPDATE audit_logs SET action = 'x' WHERE id = %s", (aid,))
     with raises_code("IMMUTABLE_RECORD"):
         db.conn.execute("DELETE FROM audit_logs WHERE id = %s", (aid,))
+
+
+def test_created_at_never_goes_backwards_per_variant(db: Db, user: int, vid: int) -> None:
+    """Simulasi jam server pernah lebih maju (mis. sebelum koreksi NTP): transaksi berikutnya
+    tidak boleh tercatat lebih awal dari transaksi terakhir varian itu."""
+    db.move(vid, "IN", 5, user)
+    with db.conn.transaction():
+        db.conn.execute("SET LOCAL session_replication_role = replica")
+        db.conn.execute(
+            "UPDATE stock_movements SET created_at = now() + interval '1 hour' WHERE variant_id = %s",
+            (vid,),
+        )
+    mid, _ = db.move(vid, "OUT", -1, user, reason="sale")
+    later, prev = db.one(
+        "SELECT (SELECT created_at FROM stock_movements WHERE id = %s),"
+        " (SELECT max(created_at) FROM stock_movements WHERE variant_id = %s AND id <> %s)",
+        (mid, vid, mid),
+    )
+    assert later >= prev
