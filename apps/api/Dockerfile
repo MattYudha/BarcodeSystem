@@ -25,4 +25,4 @@ USER app
 EXPOSE 8000
 # RUN_MIGRATIONS=1 -> migrasi otomatis saat start (dipakai compose lokal/CI).
 # Produksi: migrasi dijalankan sebagai one-shot container sebelum deploy.
-CMD ["sh", "-c", "if [ \"$RUN_MIGRATIONS\" = \"1\" ]; then bhv migrate; fi && exec uvicorn bhv.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "if [ \"$RUN_MIGRATIONS\" = \"1\" ]; then bhv migrate; fi && exec uvicorn bhv.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
