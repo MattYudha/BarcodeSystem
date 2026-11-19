@@ -122,6 +122,8 @@ jobs:
           diff -u src/lib/api/schema.d.ts /tmp/schema.d.ts || (echo "::error::schema.d.ts basi. Jalankan 'pnpm gen:api'." && exit 1)
       - run: pnpm lint
       - run: pnpm typecheck
+      - name: Unit test (logika keranjang scan)
+        run: pnpm test
       - run: pnpm build
         env:
           API_ORIGIN: http://localhost:8000

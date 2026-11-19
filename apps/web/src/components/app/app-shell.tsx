@@ -126,7 +126,7 @@ function MobileBottomNav() {
   return (
     <nav
       aria-label="Menu bawah"
-      className="fixed inset-x-0 bottom-0 z-30 grid border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t print:hidden bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map((item) => {
@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = useUser();
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 border-r bg-background p-4 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 print:!hidden shrink-0 flex-col gap-6 border-r bg-background p-4 lg:flex">
         <Brand />
         <NavLinks />
         <div className="mt-auto rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
@@ -166,7 +166,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 print:hidden items-center gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-6">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Buka menu">
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <UserMenu />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 pb-24 sm:px-6 lg:pb-8">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 pb-24 sm:px-6 lg:pb-8 print:max-w-none print:p-0">
           {children}
         </main>
       </div>

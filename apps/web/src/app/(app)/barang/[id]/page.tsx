@@ -6,6 +6,7 @@ import {
   ArchiveRestore,
   ArrowLeft,
   CheckCircle2,
+  History,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -188,6 +189,9 @@ function ProductDetail() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/barang/${p.id}/kartu/${v.id}`}><History /> Kartu stok</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/label?items=${v.id}:${Math.max(1, v.stock)}`}><Tags /> Cetak label</Link>
                         </DropdownMenuItem>
