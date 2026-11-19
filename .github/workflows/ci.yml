@@ -50,6 +50,10 @@ jobs:
         run: uv run mypy
       - name: Pytest — DB, unit, E2E API lokal (Postgres asli)
         run: uv run pytest
+      - name: Kontrak OpenAPI frontend up-to-date
+        run: |
+          uv run bhv openapi --out /tmp/openapi.json
+          diff -u ../web/openapi.json /tmp/openapi.json || (echo "::error::apps/web/openapi.json basi. Jalankan 'pnpm gen:api' di apps/web lalu commit." && exit 1)
       - name: Migrasi + rekonsiliasi stok
         run: |
           uv run bhv migrate
@@ -91,6 +95,87 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: $COMPOSE logs
+      - name: Teardown
+        if: always()
+        run: $COMPOSE down -v
+
+  web:
+    name: Web — lint, type, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Tipe API dari openapi.json up-to-date
+        run: |
+          pnpm exec openapi-typescript openapi.json -o /tmp/schema.d.ts
+          diff -u src/lib/api/schema.d.ts /tmp/schema.d.ts || (echo "::error::schema.d.ts basi. Jalankan 'pnpm gen:api'." && exit 1)
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+        env:
+          API_ORIGIN: http://localhost:8000
+
+  e2e-web:
+    name: E2E Web — Playwright + stack Docker
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    env:
+      E2E_ADMIN_EMAIL: e2e-admin@bhavia-e2e.com
+      E2E_ADMIN_PASSWORD: E2e-Admin-Pass1
+      API_ORIGIN: http://localhost:8000
+      COMPOSE: docker compose -f infra/docker-compose.yml --profile full
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start API + DB (image produksi)
+        run: $COMPOSE up -d --build --wait
+      - name: Admin E2E
+        run: >-
+          $COMPOSE exec -T api bhv create-admin
+          --email "$E2E_ADMIN_EMAIL" --name "E2E Admin" --password "$E2E_ADMIN_PASSWORD"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - name: Install & build web
+        working-directory: apps/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Install Chromium
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Playwright
+        working-directory: apps/web
+        run: pnpm e2e
+      - name: Rekonsiliasi stok setelah E2E
+        run: $COMPOSE exec -T api bhv check-stock
+      - name: Upload laporan Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7
+      - name: Logs API on failure
+        if: failure()
+        run: $COMPOSE logs api
       - name: Teardown
         if: always()
         run: $COMPOSE down -v

@@ -161,6 +161,20 @@ def seed() -> None:
     typer.echo(f"Seed selesai: {created} barang baru.")
 
 
+@app.command()
+def openapi(
+    out: Annotated[Path, typer.Option(help="File tujuan JSON")] = Path("openapi.json"),
+) -> None:
+    """Tulis skema OpenAPI (kontrak untuk frontend: `pnpm gen:api`)."""
+    import json
+
+    from bhv.main import app as api_app
+
+    payload = json.dumps(api_app.openapi(), indent=2, ensure_ascii=False)
+    out.write_text(payload + chr(10), "utf-8")
+    typer.echo(f"OpenAPI ditulis ke {out}")
+
+
 @app.command("check-stock")
 def check_stock() -> None:
     """Rekonsiliasi: stok cache = Σ transaksi = saldo terakhir, saldo berjalan konsisten."""

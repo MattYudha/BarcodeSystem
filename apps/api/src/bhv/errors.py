@@ -4,6 +4,7 @@ Error bisnis dari trigger DB (SQLSTATE P0001, MESSAGE = kode) dipetakan lewat CA
 """
 
 import json
+import logging
 from typing import Any
 
 import psycopg.errors as pg
@@ -12,6 +13,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+log = logging.getLogger("bhv")
 
 # kode -> (HTTP status, pesan)
 CATALOG: dict[str, tuple[int, str]] = {
@@ -158,6 +161,13 @@ def install(app: FastAPI) -> None:
         ]
         err = AppError("VALIDATION_ERROR", {"errors": errors})
         return JSONResponse(_body(err), status_code=422)
+
+    @app.exception_handler(Exception)
+    async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+        # Jaring pengaman: tetap format JSON standar agar frontend menampilkan pesan yang benar.
+        log.exception("Unhandled error on %s %s", request.method, request.url.path)
+        err = AppError("INTERNAL_ERROR")
+        return JSONResponse(_body(err), status_code=500)
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, exc: StarletteHTTPException) -> JSONResponse:

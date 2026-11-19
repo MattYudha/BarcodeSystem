@@ -44,14 +44,23 @@ def _lower(v: object) -> object:
     return v.strip().lower() if isinstance(v, str) else v
 
 
+# Teks opsional: "" / spasi -> None; batas panjang HANYA untuk cabang string.
+# Jangan tulis `Annotated[str | None, Field(max_length=n)]`: Pydantic menerapkan max_length ke
+# seluruh union sehingga nilai null -> TypeError -> HTTP 500 (bug yang ditangkap E2E web).
+_Str40 = Annotated[str, Field(max_length=40)]
+_Str60 = Annotated[str, Field(max_length=60)]
+_Str500 = Annotated[str, Field(max_length=500)]
+_Str2000 = Annotated[str, Field(max_length=2000)]
+
 Name = Annotated[str, BeforeValidator(_squash), Field(min_length=1, max_length=150)]
 ShortName = Annotated[str, BeforeValidator(_squash), Field(min_length=1, max_length=100)]
 CategoryName = Annotated[str, BeforeValidator(_squash), Field(min_length=1, max_length=60)]
 Email = Annotated[EmailStr, BeforeValidator(_lower), Field(max_length=150)]
 Size = Annotated[str, BeforeValidator(_upper), Field(min_length=1, max_length=20)]
-Color = Annotated[str | None, BeforeValidator(_empty_to_none), Field(max_length=40)]
-OptText = Annotated[str | None, BeforeValidator(_empty_to_none), Field(max_length=2000)]
-BatchCode = Annotated[str | None, BeforeValidator(_empty_to_none), Field(max_length=40)]
+Color = Annotated[_Str40 | None, BeforeValidator(_empty_to_none)]
+OptText = Annotated[_Str2000 | None, BeforeValidator(_empty_to_none)]
+BatchCode = Annotated[_Str40 | None, BeforeValidator(_empty_to_none)]
+NoteText = Annotated[_Str500 | None, BeforeValidator(_empty_to_none)]
 Password = Annotated[str, Field(min_length=8, max_length=128)]
 Qty = Annotated[int, Field(ge=0, le=1_000_000)]
 Money = Annotated[
@@ -83,9 +92,7 @@ LoginEmail = Annotated[str, BeforeValidator(_lower), Field(min_length=3, max_len
 class LoginIn(Model):
     email: LoginEmail  # tanpa validasi format ketat: cukup dicocokkan ke DB
     password: Annotated[str, Field(min_length=1, max_length=128)]
-    device_label: Annotated[str | None, BeforeValidator(_empty_to_none), Field(max_length=60)] = (
-        None
-    )
+    device_label: Annotated[_Str60 | None, BeforeValidator(_empty_to_none)] = None
 
 
 class MeOut(BaseModel):

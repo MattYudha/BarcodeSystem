@@ -5,12 +5,12 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
-from bhv.schemas import BatchCode, Model, ProductionDate, _empty_to_none
+from bhv.schemas import BatchCode, Model, NoteText, ProductionDate, _empty_to_none
 
 MovementType = Literal["IN", "OUT", "ADJUST", "REVERSAL"]
 OutReason = Literal["sale", "return_to_production", "damaged", "other"]
 ScanSource = Literal["scanner", "camera", "manual"]
-Note = Annotated[str | None, BeforeValidator(_empty_to_none), Field(max_length=500)]
+Note = NoteText
 RequiredNote = Annotated[str, BeforeValidator(_empty_to_none), Field(min_length=1, max_length=500)]
 LineQty = Annotated[int, Field(ge=1, le=100_000)]
 
